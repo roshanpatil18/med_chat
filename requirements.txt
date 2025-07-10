@@ -1,8 +1,8 @@
 streamlit
 langchain
-langchain-huggingface
 sentence-transformers
-transformers
 torch
 faiss-cpu
-huggingface-hub
+requests
+python-dotenv
+PyMuPDF
