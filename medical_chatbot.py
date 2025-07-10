@@ -7,7 +7,8 @@ import requests
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.document_loaders import PyMuPDFLoader
-from langchain.embeddings import HuggingFaceEmbeddings
+# Fixed import - use langchain_huggingface instead of langchain.embeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain.vectorstores import FAISS
 
 # Load environment variables
@@ -37,13 +38,31 @@ def load_and_process_pdf():
     return splitter.split_documents(documents)
 
 def get_vector_store():
-    embedder = HuggingFaceEmbeddings(
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
-        cache_folder=".hf_cache"
-    )
+    try:
+        embedder = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            cache_folder=".hf_cache"
+        )
+    except ImportError as e:
+        st.error(f"Error initializing embeddings: {e}")
+        st.error("Please install required dependencies: pip install sentence-transformers")
+        st.stop()
+    except Exception as e:
+        st.error(f"Error initializing embeddings: {e}")
+        st.stop()
 
     if os.path.isdir(INDEX_DIR):
-        return FAISS.load_local(INDEX_DIR, embedder)
+        try:
+            return FAISS.load_local(INDEX_DIR, embedder, allow_dangerous_deserialization=True)
+        except Exception as e:
+            st.warning(f"Could not load existing index: {e}")
+            st.info("Creating new index...")
+            # If loading fails, create new index
+            chunks = load_and_process_pdf()
+            db = FAISS.from_documents(chunks, embedder)
+            db.save_local(INDEX_DIR)
+            st.success("✅ Knowledge base ready!")
+            return db
     else:
         chunks = load_and_process_pdf()
         db = FAISS.from_documents(chunks, embedder)
@@ -94,8 +113,13 @@ with st.sidebar:
         with st.spinner("Indexing..."):
             st.session_state.db = get_vector_store()
 
-if st.session_state.db is None:
-    st.session_state.db = get_vector_store()
+# Initialize the database with error handling
+try:
+    if st.session_state.db is None:
+        st.session_state.db = get_vector_store()
+except Exception as e:
+    st.error(f"Failed to initialize knowledge base: {e}")
+    st.stop()
 
 for entry in st.session_state.history:
     with st.chat_message("user"):

@@ -1,9 +1,11 @@
 streamlit
-langchain>=0.1.0
-langchain-community
-huggingface-hub
-sentence-transformers
-pymupdf
 python-dotenv
-faiss-cpu
 requests
+langchain
+langchain-community
+langchain-huggingface
+sentence-transformers
+faiss-cpu
+PyMuPDF
+transformers
+torch
