@@ -3,9 +3,6 @@ python-dotenv
 requests
 langchain
 langchain-community
-langchain-huggingface
-sentence-transformers
-faiss-cpu
 PyMuPDF
-transformers
-torch
+numpy
+scikit-learn
